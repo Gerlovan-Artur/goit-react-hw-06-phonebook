@@ -1,17 +1,21 @@
-import propTypes from 'prop-types';
 import { useState } from 'react';
+import { useDispatch, useSelector } from 'react-redux';
+import { addContact } from 'redux/contactsSlice';
+import { getContacts } from 'redux/selectors';
 import { nanoid } from 'nanoid';
+import { ToastContainer, toast } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
 import style from '../Form/Form.module.css';
 
-
-export function ContactForm({onSubmit}) {
-  const [name, setName] = useState('')
-  const [number, setNumber] = useState('')
-
+export function ContactForm() {
+  const [name, setName] = useState('');
+  const [number, setNumber] = useState('');
+  const dispatch = useDispatch();
+  const contacts = useSelector(getContacts);
   const contactsId = nanoid();
 
-  function handleChange(event) {
-    const { name, value } = event.target;
+  function handleChange(e) {
+    const { name, value } = e.target;
 
     switch (name) {
       case 'name':
@@ -23,27 +27,34 @@ export function ContactForm({onSubmit}) {
         break;
 
       default:
-        return
+        throw new Error("There isn't such option");
     }
-  };
+  }
 
- const handleSubmit = event => {
-    event.preventDefault();
-    const { name, number } = event.target.elements;
-    onSubmit(name.value, number.value);
+  function handleSubmit(e) {
+    e.preventDefault();
+    const name = e.target.elements.name.value;
+    const number = e.target.elements.number.value;
+
+    const isExist = contacts.find(contact => {
+      return contact.name === name;
+    });
+    if (isExist) {
+      return toast.warn(`${name} is already in contacts.`);
+    }
+
+    dispatch(addContact(name, number));
     setName('');
     setNumber('');
-  };
-
-
+  }
 
   return (
     <form onSubmit={handleSubmit}>
-      <p>Name</p>
       <label htmlFor={contactsId}>
+        <p>Name</p>{' '}
         <input
-          id={contactsId}
           value={name}
+          id={contactsId}
           onChange={handleChange}
           type="text"
           name="name"
@@ -52,11 +63,11 @@ export function ContactForm({onSubmit}) {
           required
         />
       </label>
-      <p>Number</p>
       <label htmlFor={contactsId}>
+        <p>Number</p>{' '}
         <input
-          id={contactsId}
           value={number}
+          id={contactsId}
           onChange={handleChange}
           type="tel"
           name="number"
@@ -65,13 +76,10 @@ export function ContactForm({onSubmit}) {
           required
         />
       </label>
-      <button className={style.form_btn} type="submit">
+      <button type="submit" className={style.form_btn}>
         Add contact
       </button>
+      <ToastContainer />
     </form>
   );
 }
-
-ContactForm.propTypes = {
-  onSubmit: propTypes.func.isRequired,
-};
